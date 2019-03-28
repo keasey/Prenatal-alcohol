@@ -1,0 +1,401 @@
+# Prenatal-alcohol
+Negative control
+*Stata script
+
+*Prenatal alcohol and offspring depression 
+gen gender = kz021
+recode gender 2=1 1=0 -1=.
+label define genderlb 1"female" 0"male"
+label values gender genderlb
+tab gender kz021
+numlabel genderlb, add
+
+recode c645a (5=0) (1/4=1) (-1=.), gen (mat_edu)
+label define edulb 0"uni degree" 1"< uni degree"
+label values mat_edu edulb
+tab mat_edu c645a, miss
+numlabel edulb, add
+
+recode hhinc5cat (0=4) (1=3) (3=1) (4=0), gen (income)
+tab hhinc5cat income
+label define incomelb 0 "highest" 4 "lowest"
+label values income incomelb
+tab income hhinc5cat
+numlabel incomelb, add
+
+gen parity = b032
+recode parity 1/max=1 min/-1=.
+label define paritylb 0"first born" 1"2nd+ born"
+label values parity paritylb
+tab parity b032
+numlabel paritylb, add
+
+recode c755 (3/6=1) (1/2=0)(-1=.) (65=.), gen (sclass)
+label values sclass sclasslb
+tab sclass c755
+numlabel sclasslb, add
+
+recode a006 (-7/-1=.) (0/1=0) (2/6=1), gen (home_ownership)
+label define homelb 0"home owner" 1"not home owner"
+label values home_ownership homelb
+tab home_ownership a006, miss
+numlabel homelb, add
+
+recode a525(-1=.) (5/6=0) (1/4=1), gen (marital_status)
+label define marriedlb 0 "married" 1"not married"
+label values marital_status marriedlb
+tab marital_status a525
+numlabel marriedlb, add
+
+recode b714 (-1=.) (2=0), gen (drugspreg)
+label values drugspreg yes_nolb
+numlabel yes_nolb, add
+tab drugspreg b714, miss
+
+gen epds_b_bin = 0
+replace epds_b_bin = 1 if epds_b_sumscore >12 
+replace epds_b_bin = . if epds_b_sumscore ==. 
+tab epds_b_bin
+
+gen cisr_mild = fkdq1000
+recode cisr_mild (-11/-1=.)
+tab cisr_mild
+gen cisr_mod = fkdq1010
+recode cisr_mod (-11/-1=.)
+tab cisr_mod
+gen cisr_sev = fkdq1020
+recode cisr_sev (-11/-1=.)
+tab cisr_sev
+gen cisr24 = .
+replace cisr24 = 0 if (cisr_mild ==0 | cisr_mod == 0 | cisr_sev ==0)
+replace cisr24 = 1 if (cisr_mild ==1 | cisr_mod == 1 | cisr_sev ==1)
+label define deplb 0"No" 1"Yes"
+label values cisr24 deplb
+numlabel deplb, add
+tab cisr24
+
+recode  b721 (-1=.) (1=0) (2=1) (3=2) (4=3) (5/6=4), gen (alc_amt_18wk) 
+label define alclb 0 "never" 1 "<1 glass PWK" 2 "1+ glass PWK" 3 "1-2 glass PD" 4 "3+ glass PD"
+label values alc_amt_18wk alclb
+label variable alc_amt_18wk "RECODE of b721 (number of alc drinks in first 3 months preg)"
+numlabel alclb, add
+tab alc_amt_18wk b721, miss
+
+gen alc_binge_18wk = b723
+recode alc_binge_18wk (-1=.) (4/5=4) 
+label define alcdayslb 0"none" 1"1-2 days" 2"3-4 days" 3"5-10 days" 4">10 days" 
+label values alc_binge_18wk alcdayslb
+numlabel alcdayslb, add
+label variable alc_binge_18wk "RECODE of b723 (number of times 4+ units in past month, 18 weeks preg)"
+tab alc_binge_18wk b723, miss
+
+gen alc_binge_32wk = c360
+recode alc_binge_32wk (-7/-1=.) (4/5=4) 
+label values alc_binge_32wk alcdayslb
+label variable alc_binge_32wk "RECODE of c360 (number of times 4+ units in past month)"
+numlabel alcdayslb, add
+tab alc_binge_32wk c360, miss 
+
+recode  pb100 (-1=.) (1=0) (2=1) (3=2) (4=3) (5/6=4), gen (dad_alc_amt) 
+label values dad_alc_amt alclb
+label variable dad_alc_amt "RECODE of pb100 (dad, number of alc drinks in first 3 months preg)"
+numlabel alclb, add
+tab dad_alc_amt pb100, miss
+
+gen dad_alc_binge = pb101
+recode dad_alc_binge (-1=.) (4/5=4)
+label values dad_alc_binge alcdayslb
+label variable dad_alc_binge "RECODE of pb101 (number of times dad 4+ units in past month, 18 weeks preg)"
+numlabel alcdayslb, add
+tab dad_alc_binge pb101, miss
+
+gen cc_all =1 if sclass !=. & income !=. & home_ownership !=. & marital_status !=. & mat_edu !=. & gender !=. & parity !=. & smokepreg !=. & drugspreg !=. & epds_b_bin !=. 
+keep if alc_binge_18wk !=. | alc_amt_18wk !=. | alc_binge_32wk !=.| weekly_units_32wk !=.
+ice o.alc_amt_18wk o.alc_binge_18wk weekly_units_32wk o.alc_binge_32wk o.dad_alc_amt o.dad_alc_binge ///
+o.mum_alc_amt_5yr o.mum_binge_5yr ///
+mfq_t1 mfq_t2 mfq_t3 mfq_t4 mfq_t5 mfq_t6 mfq_t7 mfq_t8 ///
+sclass dad_sclass mat_edu dad_edu epds_b_sumscore epds_c_sumscore ///
+epds_e_sumscore epds_f_sumscore epds_g_sumscore epds_h_sumscore epds_k_sumscore epds_l_sumscore epds_n_sumscore ///
+parity o.crowding matage o.dwell home_ownership breastfed o.income bw bestgest smokepreg drugspreg /// 
+dad_smoke FJCI1001 FJCI1000 cisr24 marital_status gender, ///
+match(weekly_units_32wk epds_b_sumscore epds_c_sumscore epds_e_sumscore epds_f_sumscore epds_g_sumscore epds_h_sumscore epds_k_sumscore epds_l_sumscore epds_n_sumscore /// 
+FJCI1000 bw bestgest mfq_t1 mfq_t2 mfq_t3 mfq_t4 mfq_t5 mfq_t6 mfq_t7 mfq_t8) ///
+saving ("imputation.dta", replace) ///
+seed(250510) m(100) cycles (10)
+
+*Analysis imputed dataset
+mim : logistic FJCI1001 i.alc_amt_18wk
+mim : logistic FJCI1001 i.alc_binge_18wk
+mim : regress FJCI1001 weekly_units_32wk
+mim : logistic FJCI1001 i.alc_binge_32wk
+
+tabulate alc_amt_18wk, gen (alc_amt_18wk)
+tabulate alc_binge_18wk, gen (alc_binge_18wk)
+tabulate alc_binge_32wk, gen (alc_binge_32wk)
+
+xi: mim: logistic FJCI1001 alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+mim: testparm alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+
+xi: mim: logistic FJCI1001 alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5
+mim: testparm alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5
+
+xi: mim: logistic FJCI1001 alc_binge_32wk2 alc_binge_32wk3 alc_binge_32wk4 alc_binge_32wk5
+mim: testparm alc_binge_32wk2 alc_binge_32wk3 alc_binge_32wk4 alc_binge_32wk5
+
+mim : logistic FJCI1001 i.alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity
+mim : logistic FJCI1001 i.alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity
+mim : regress FJCI1001 weekly_units_32wk sclass income home_ownership marital_status mat_edu gender parity
+mim : logistic FJCI1001 i.alc_binge_32wk sclass income home_ownership marital_status mat_edu gender parity
+
+xi: mim: logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+mim: testparm alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+
+xi: mim: logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5
+mim: testparm alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5
+
+xi: mim: logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity alc_binge_32wk2 alc_binge_32wk3 alc_binge_32wk4 alc_binge_32wk5
+mim: testparm alc_binge_32wk2 alc_binge_32wk3 alc_binge_32wk4 alc_binge_32wk5
+
+mim : logistic FJCI1001 i.alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic FJCI1001 i.alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : regress FJCI1001 weekly_units_32wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic FJCI1001 i.alc_binge_32wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+
+xi: mim: logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+mim: testparm alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+
+xi: mim: logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5  
+mim: testparm alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5 
+
+xi: mim: logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_binge_32wk2 alc_binge_32wk3 alc_binge_32wk4 alc_binge_32wk5
+mim: testparm alc_binge_32wk2 alc_binge_32wk3 alc_binge_32wk4 alc_binge_32wk5
+
+tabulate dad_alc_amt, gen (dad_alc_amt)
+tabulate dad_alc_binge, gen (dad_alc_binge)
+
+mim : logistic FJCI1001 i.dad_alc_amt
+mim : logistic FJCI1001 i.dad_alc_binge
+
+xi: mim : logistic FJCI1001 dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+mim : testparm dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+
+xi: mim : logistic FJCI1001 dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+mim : testparm dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+
+mim : logistic FJCI1001 i.dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity
+mim : logistic FJCI1001 i.dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity
+
+xi: mim : logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+mim : testparm dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+
+xi: mim : logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+mim : testparm dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+
+mim : logistic FJCI1001 i.dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic FJCI1001 i.dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+
+xi: mim : logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+mim : testparm dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+
+xi: mim : logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+mim : testparm dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+
+mim : logistic cisr24 i.alc_amt_18wk
+mim : logistic cisr24 i.alc_binge_18wk
+mim : regress cisr24 weekly_units_32wk
+mim : logistic cisr24 i.alc_binge_32wk
+
+xi: mim: logistic cisr24 alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+mim: testparm alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+
+xi: mim: logistic cisr24 alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5
+mim: testparm alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5
+
+xi: mim: logistic cisr24 alc_binge_32wk2 alc_binge_32wk3 alc_binge_32wk4 alc_binge_32wk5
+mim: testparm alc_binge_32wk2 alc_binge_32wk3 alc_binge_32wk4 alc_binge_32wk5
+
+mim : logistic cisr24 i.alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity
+mim : logistic cisr24 i.alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity
+mim : regress cisr24 weekly_units_32wk sclass income home_ownership marital_status mat_edu gender parity
+mim : logistic cisr24 i.alc_binge_32wk sclass income home_ownership marital_status mat_edu gender parity
+
+xi: mim: logistic cisr24 sclass income home_ownership marital_status mat_edu gender parity alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+mim: testparm alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+
+xi: mim: logistic cisr24 sclass income home_ownership marital_status mat_edu gender parity alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5
+mim: testparm alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5
+
+xi: mim: logistic cisr24 sclass income home_ownership marital_status mat_edu gender parity alc_binge_32wk2 alc_binge_32wk3 alc_binge_32wk4 alc_binge_32wk5
+mim: testparm alc_binge_32wk2 alc_binge_32wk3 alc_binge_32wk4 alc_binge_32wk5
+
+mim : logistic cisr24 i.alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic cisr24 i.alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : regress cisr24 weekly_units_32wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic cisr24 i.alc_binge_32wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+
+xi: mim: logistic cisr24 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+mim: testparm alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+
+xi: mim: logistic cisr24 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5  
+mim: testparm alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5 
+
+xi: mim: logistic cisr24 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_binge_32wk2 alc_binge_32wk3 alc_binge_32wk4 alc_binge_32wk5
+mim: testparm alc_binge_32wk2 alc_binge_32wk3 alc_binge_32wk4 alc_binge_32wk5
+
+mim : logistic cisr24 i.dad_alc_amt
+mim : logistic cisr24 i.dad_alc_binge
+
+xi: mim : logistic cisr24 dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+mim : testparm dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+
+xi: mim : logistic cisr24 dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+mim : testparm dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+
+mim : logistic cisr24 i.dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity
+mim : logistic cisr24 i.dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity
+
+xi: mim : logistic cisr24 sclass income home_ownership marital_status mat_edu gender parity dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+mim : testparm dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+
+xi: mim : logistic cisr24 sclass income home_ownership marital_status mat_edu gender parity dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+mim : testparm dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+
+mim : logistic cisr24 i.dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic cisr24 i.dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+
+xi: mim : logistic cisr24 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+mim : testparm dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+
+xi: mim : logistic cisr24 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+mim : testparm dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+
+mim : logistic FJCI1001 alc_amt_18wk 
+mim : logistic FJCI1001 alc_binge_18wk 
+mim : logistic FJCI1001 alc_binge_32wk 
+
+mim : logistic FJCI1001 alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity 
+mim : logistic FJCI1001 alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity
+mim : logistic FJCI1001 alc_binge_32wk sclass income home_ownership marital_status mat_edu gender parity
+
+
+mim : logistic FJCI1001 alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic FJCI1001 alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic FJCI1001 alc_binge_32wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+
+mim : logistic FJCI1001 dad_alc_amt 
+mim : logistic FJCI1001 dad_alc_binge 
+
+mim : logistic FJCI1001 dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity 
+mim : logistic FJCI1001 dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity
+
+mim : logistic FJCI1001 dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic FJCI1001 dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+
+mim : logistic cisr24 alc_amt_18wk 
+mim : logistic cisr24 alc_binge_18wk 
+mim : logistic cisr24 alc_binge_32wk 
+
+mim : logistic cisr24 alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity 
+mim : logistic cisr24 alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity
+mim : logistic cisr24 alc_binge_32wk sclass income home_ownership marital_status mat_edu gender parity
+
+mim : logistic cisr24 alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic cisr24 alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic cisr24 alc_binge_32wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+
+mim : logistic cisr24 alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic cisr24 alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic cisr24 alc_binge_32wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+
+mim : logistic cisr24 dad_alc_amt 
+mim : logistic cisr24 dad_alc_binge 
+
+mim : logistic cisr24 dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity 
+mim : logistic cisr24 dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity
+
+mim : logistic cisr24 dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic cisr24 dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+
+mim : logistic cisr24 dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+mim : logistic cisr24 dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin
+
+mim : logistic cisr24 i.alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_amt
+mim : logistic cisr24 i.alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_binge
+
+mim : logistic cisr24 i.dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_amt_18wk
+mim : logistic cisr24 i.dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_binge_18wk
+
+mim : logistic cisr24 alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_amt
+mim : logistic cisr24 alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_binge
+
+mim : logistic cisr24 dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_amt_18wk
+mim : logistic cisr24 dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_binge_18wk
+
+xi: mim: logistic cisr24 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_amt alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+mim: testparm alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+
+xi: mim: logistic cisr24 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_binge alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5  
+mim: testparm alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5 
+
+mim : logistic FJCI1001 i.alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_amt
+mim : logistic FJCI1001 i.alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_binge
+
+xi: mim: logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_amt alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+mim: testparm alc_amt_18wk2 alc_amt_18wk3 alc_amt_18wk4 alc_amt_18wk5
+
+xi: mim: logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_binge alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5  
+mim: testparm alc_binge_18wk2 alc_binge_18wk3 alc_binge_18wk4 alc_binge_18wk5 
+
+mim : logistic FJCI1001 alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_amt
+mim : logistic FJCI1001 alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_binge
+
+mim : logistic FJCI1001 i.dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_amt_18wk
+mim : logistic FJCI1001 i.dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_binge_18wk
+
+xi: mim : logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_amt_18wk dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+mim : testparm dad_alc_amt2 dad_alc_amt3 dad_alc_amt4 dad_alc_amt5
+
+xi: mim : logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_binge_18wk dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+mim : testparm dad_alc_binge2 dad_alc_binge3 dad_alc_binge4 dad_alc_binge5
+
+mim : logistic FJCI1001 dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_amt_18wk
+mim : logistic FJCI1001 dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_binge_18wk
+
+*full sample data
+use "\fullsample.dta", replace
+logistic FJCI1001 i.alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_amt
+logistic FJCI1001 i.alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_binge
+
+logistic FJCI1001 alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_amt
+logistic FJCI1001 alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_binge
+
+logistic FJCI1001 i.alc_amt_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_amt
+estimates store a
+logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_amt if alc_amt_18wk <.
+estimates store b
+lrtest a b 
+
+logistic FJCI1001 i.alc_binge_18wk sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_binge
+estimates store a
+logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin dad_alc_binge if alc_binge_18wk <.
+estimates store b
+lrtest a b 
+
+logistic FJCI1001 i.dad_alc_amt sclass income home_ownership marital_status mated gender parity smokepreg drugspreg epds_b_bin alc_amt_18wk
+logistic FJCI1001 i.dad_alc_binge sclass income home_ownership marital_status mated gender parity smokepreg drugspreg epds_b_bin alc_binge_18wk
+
+logistic FJCI1001 dad_alc_amt sclass income home_ownership marital_status mated gender parity smokepreg drugspreg epds_b_bin alc_amt_18wk
+logistic FJCI1001 dad_alc_binge sclass income home_ownership marital_status mated gender parity smokepreg drugspreg epds_b_bin alc_binge_18wk
+
+logistic FJCI1001 i.dad_alc_amt sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_amt_18wk
+estimates store a
+logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_amt_18wk if dad_alc_amt <.
+estimates store b
+lrtest a b 
+
+logistic FJCI1001 i.dad_alc_binge sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_binge_18wk
+estimates store a
+logistic FJCI1001 sclass income home_ownership marital_status mat_edu gender parity smokepreg drugspreg epds_b_bin alc_binge_18wk if dad_alc_binge <.
+estimates store b
+lrtest a b 
+
